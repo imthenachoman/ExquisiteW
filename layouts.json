@@ -1,0 +1,132 @@
+{
+    "windowPaddingInPixels": 2,
+    "layouts": [
+        {
+            "name": "Two Vertical Split",
+            "windowPaddingInPixels": 5,
+            "zones": [
+                {
+                    "topLeftRowNumber": 0,
+                    "topLeftColumnNumber": 0,
+                    "numberOfRows": 12,
+                    "numberOfColumns": 6,
+                    "activator": "a",
+                    "hotkey": "^!+s",
+                    "windowPaddingInPixels": 10
+                },
+                {
+                    "topLeftRowNumber": 0,
+                    "topLeftColumnNumber": 6,
+                    "numberOfRows": 12,
+                    "numberOfColumns": 6
+                }
+            ]
+        },
+        {
+            "name": "Two Horizontal Split",
+            "zones": [
+                {
+                    "topLeftRowNumber": 0,
+                    "topLeftColumnNumber": 0,
+                    "numberOfRows": 6,
+                    "numberOfColumns": 12
+                },
+                {
+                    "topLeftRowNumber": 6,
+                    "topLeftColumnNumber": 0,
+                    "numberOfRows": 6,
+                    "numberOfColumns": 12
+                }
+            ]
+        },
+        {
+            "name": "4 Splits",
+            "zones": [
+                {
+                    "topLeftRowNumber": 0,
+                    "topLeftColumnNumber": 0,
+                    "numberOfRows": 6,
+                    "numberOfColumns": 6,
+                    "hotkey": "^!+z"
+                },
+                {
+                    "topLeftRowNumber": 0,
+                    "topLeftColumnNumber": 6,
+                    "numberOfRows": 6,
+                    "numberOfColumns": 6
+                },
+                {
+                    "topLeftRowNumber": 6,
+                    "topLeftColumnNumber": 0,
+                    "numberOfRows": 6,
+                    "numberOfColumns": 6,
+                    "activator": "sb"
+                },
+                {
+                    "topLeftRowNumber": 6,
+                    "topLeftColumnNumber": 6,
+                    "numberOfRows": 6,
+                    "numberOfColumns": 6
+                }
+            ]
+        },
+        {
+            "name": "Thirds",
+            "zones": [
+                {
+                    "topLeftRowNumber": 0,
+                    "topLeftColumnNumber": 0,
+                    "numberOfRows": 12,
+                    "numberOfColumns": 4
+                },
+                {
+                    "topLeftRowNumber": 0,
+                    "topLeftColumnNumber": 4,
+                    "numberOfRows": 12,
+                    "numberOfColumns": 4
+                },
+                {
+                    "topLeftRowNumber": 0,
+                    "topLeftColumnNumber": 8,
+                    "numberOfRows": 12,
+                    "numberOfColumns": 4,
+                    "activator": "u"
+                }
+            ]
+        },
+        {
+            "name": "Priority",
+            "zones": [
+                {
+                    "topLeftRowNumber": 0,
+                    "topLeftColumnNumber": 0,
+                    "numberOfRows": 12,
+                    "numberOfColumns": 3
+                },
+                {
+                    "topLeftRowNumber": 0,
+                    "topLeftColumnNumber": 3,
+                    "numberOfRows": 12,
+                    "numberOfColumns": 6
+                },
+                {
+                    "topLeftRowNumber": 0,
+                    "topLeftColumnNumber": 9,
+                    "numberOfRows": 12,
+                    "numberOfColumns": 3
+                }
+            ]
+        },
+        {
+            "name": "FullScreen",
+            "zones": [
+                {
+                    "topLeftRowNumber": 0,
+                    "topLeftColumnNumber": 0,
+                    "numberOfRows": 12,
+                    "numberOfColumns": 12
+                }
+            ]
+        },
+    ]
+}
