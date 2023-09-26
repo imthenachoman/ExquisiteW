@@ -20,9 +20,11 @@ After layouts have been configured, and ExquisiteW is running, you can use Exqui
 - [Getting It](#getting-it)
   - [Requirements](#requirements)
   - [Installation](#installation)
-- [How To Use It](#how-to-use-it)
+- [Using It](#using-it)
   - [Configuration File Specification](#configuration-file-specification)
     - [`settings.ini`](#settingsini)
+      - [Section `Layout Selector`](#section-layout-selector)
+      - [Section `Layout Configuration`](#section-layout-configuration)
     - [`layouts.json`](#layoutsjson)
       - [`windowPaddingInPixels`](#windowpaddinginpixels)
       - [`layouts[].zones[].hotkey`](#layoutszoneshotkey)
@@ -69,9 +71,9 @@ You'll get a notification letting you know it's running, along with what Exquisi
 
 ![started notification](images/started%20notification.png)
 
-# How To Use It
+# Using It
 
-- You can customize the [global shortcut/trigger](#settingsini) used to show ExquisiteW's GUI
+- You can customize the [global shortcut/trigger](#section-layout-selector) used to show ExquisiteW's GUI
 - ExquisiteW's GUI will show you all of your configured layouts 
   - Each layout will have 1+ buttons to represent each zone in that layout
   - Each button/zone will be visually placed in the layout to represent the area of the monitor the window will be moved and resized to 
@@ -91,14 +93,22 @@ There are two configuration files used by ExquisiteW:
 
 This is a standard [INI file](https://en.wikipedia.org/wiki/INI_file) with some global, non-layout specific settings.
 
-| INI Section            | Setting                   | Valid Options                     | Default    | Description                                                                                                           |
-| ---------------------- | ------------------------- | --------------------------------- | ---------- | --------------------------------------------------------------------------------------------------------------------- |
-| `Layout Selector`      | `CloseAfterSelection`     | `1` or `0`                        | `1`        | `1` = close ExquisiteW's GUI after you select a zone                                                                  |
-| `Layout Selector`      | `Opacity`                 | whole number from `1` to `100`    | `100`      | `0` = make ExquisiteW's GUI completely transparent                                                                    |
-| `Layout Selector`      | `Trigger`                 | [AHK HotKey](#autohotkey-hotkeys) | `^Mbutton` | The global keyboard shortcut to show ExquisiteW's GUI when the mouse is over a window/application that can be resized |
-| `Layout Configuration` | `NumberOfLayoutsInARow`   | whole number greater than 1       | `4`        | Number of layouts per row in ExquisiteW's GUI                                                                         |
-| `Layout Configuration` | `LayoutBoxWidthInPixels`  | whole number greater than 1       | `200`      | Width of each layout (in pixels) in ExquisiteW's GUI                                                                  |
-| `Layout Configuration` | `LayoutBoxHeightInPixels` | whole number greater than 1       | `125`      | Height of each layout (in pixels) in ExquisiteW's GUI                                                                 |
+#### Section `Layout Selector`
+
+| Setting               | Valid Options                     | Default    | Description                                                                                                           |
+| --------------------- | --------------------------------- | ---------- | --------------------------------------------------------------------------------------------------------------------- |
+| `CloseAfterSelection` | `1` or `0`                        | `1`        | `1` = close ExquisiteW's GUI after you select a zone                                                                  |
+| `Opacity`             | whole number from `1` to `100`    | `100`      | `0` = make ExquisiteW's GUI completely transparent                                                                    |
+| `Trigger`             | [AHK HotKey](#autohotkey-hotkeys) | `^Mbutton` | The global keyboard shortcut to show ExquisiteW's GUI when the mouse is over a window/application that can be resized |
+
+#### Section `Layout Configuration`
+
+| Setting                   | Valid Options               | Default | Description                                           |
+| ------------------------- | --------------------------- | ------- | ----------------------------------------------------- |
+| `NumberOfLayoutsInARow`   | whole number greater than 1 | `4`     | Number of layouts per row in ExquisiteW's GUI         |
+| `LayoutBoxWidthInPixels`  | whole number greater than 1 | `200`   | Width of each layout (in pixels) in ExquisiteW's GUI  |
+| `LayoutBoxHeightInPixels` | whole number greater than 1 | `125`   | Height of each layout (in pixels) in ExquisiteW's GUI |
+
 
 ### `layouts.json`
 
@@ -129,20 +139,20 @@ This is a standard [INI file](https://en.wikipedia.org/wiki/INI_file) with some 
 }
 ```
 
-| Property                                  | Valid Options                     | Description                                                                            |
-| ----------------------------------------- | --------------------------------- | -------------------------------------------------------------------------------------- |
-| `windowPaddingInPixels`                   | number                            | Global window padding for all zones in all layouts (see [`windowPaddingInPixels`](#windowpaddinginpixels))                                     |
-| `layouts` *                               | array of layouts                  | All of the layouts                                                                     |
-| `layouts[].name` *                        | string                            | Name of the layout to show in the GUI                                                  |
-| `layouts[].windowPaddingInPixels`         | number                            | Window padding for all of zones in this layout (see [`windowPaddingInPixels`](#windowpaddinginpixels))                                        |
-| `layouts[].zones` *                       | array of zones                    | All of the zones for this layout                                                       |
-| `layouts[].zones[].topLeftRowNumber` *    | 0-11                              | Row number of the top left corner of the window (see [How It Works](#how-it-works))    |
-| `layouts[].zones[].topLeftColumnNumber` * | 0-11                              | Column number of the top left corner of the window (see [How It Works](#how-it-works)) |
-| `layouts[].zones[].numberOfRows` *        | 1-12                              | Height of the window, in number of rows (see [How It Works](#how-it-works))            |
-| `layouts[].zones[].numberOfColumns` *     | 1-12                              | Width of the window, in number of columns (see [How It Works](#how-it-works))          |
-| `layouts[].zones[].activator`             | letter                            | Single letter to activate a zone/button in the GUI                                     |
-| `layouts[].zones[].hotkey`                | [AHK HotKey](#autohotkey-hotkeys) | Global shortcut to activate a zone without the GUI (see [`layouts[].zones[].hotkey`](#layoutszoneshotkey))                                    |
-| `layouts[].zones[].windowPaddingInPixels` | number                            | Window padding for this zone in this layout (see [`windowPaddingInPixels`](#windowpaddinginpixels))                                           |
+| Property                                  | Valid Options                     | Description                                                                                                |
+| ----------------------------------------- | --------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `windowPaddingInPixels`                   | number                            | Global window padding for all zones in all layouts (see [`windowPaddingInPixels`](#windowpaddinginpixels)) |
+| `layouts` *                               | array of layouts                  | All of the layouts                                                                                         |
+| `layouts[].name` *                        | string                            | Name of the layout to show in the GUI                                                                      |
+| `layouts[].windowPaddingInPixels`         | number                            | Window padding for all of zones in this layout (see [`windowPaddingInPixels`](#windowpaddinginpixels))     |
+| `layouts[].zones` *                       | array of zones                    | All of the zones for this layout                                                                           |
+| `layouts[].zones[].topLeftRowNumber` *    | 0-11                              | Row number of the top left corner of the window (see [How It Works](#how-it-works))                        |
+| `layouts[].zones[].topLeftColumnNumber` * | 0-11                              | Column number of the top left corner of the window (see [How It Works](#how-it-works))                     |
+| `layouts[].zones[].numberOfRows` *        | 1-12                              | Height of the window, in number of rows (see [How It Works](#how-it-works))                                |
+| `layouts[].zones[].numberOfColumns` *     | 1-12                              | Width of the window, in number of columns (see [How It Works](#how-it-works))                              |
+| `layouts[].zones[].activator`             | letter                            | Single letter to activate a zone/button in the GUI                                                         |
+| `layouts[].zones[].hotkey`                | [AHK HotKey](#autohotkey-hotkeys) | Global shortcut to activate a zone without the GUI (see [`layouts[].zones[].hotkey`](#layoutszoneshotkey)) |
+| `layouts[].zones[].windowPaddingInPixels` | number                            | Window padding for this zone in this layout (see [`windowPaddingInPixels`](#windowpaddinginpixels))        |
 
 **\* required properties**
 
