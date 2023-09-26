@@ -1,6 +1,6 @@
 # ExquisiteW <!-- omit from toc -->
 
-ExquisiteW is a GUI driven window manager utility that lets you create custom window layouts and then quickly move and resize windows to zones using a GUI or keyboard shortcuts.
+ExquisiteW is a GUI driven window manager utility for Windows 10 that lets you create custom window layouts and then quickly move and resize windows to zones using a GUI or keyboard shortcuts.
 
 After layouts have been configured, and ExquisiteW is running, you can use ExquisiteW to move and resize the window under the mouse to a specific zones in one of 2 ways:
 
