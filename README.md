@@ -201,7 +201,7 @@ You can get support/help in one of two ways:
 
 So I* decided to build a Windows clone of [Exquisite](https://github.com/qewer33/Exquisite).
 
-\* I didn't know [AutoHotKey](https://www.autohotkey.com/) when I started. I reached out to [malcev1](https://github.com/malcev1) who created the first version for me. I took [to do: prefered pronoun] 
+\* I didn't know [AutoHotKey](https://www.autohotkey.com/) when I started. I reached out to [malcev1](https://github.com/malcev1) who created the first version for me. I took [malcev1](https://github.com/malcev1)'s code tweaked it, and added features I needed.
 
 # Credits
 
