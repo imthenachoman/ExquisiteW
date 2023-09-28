@@ -343,7 +343,11 @@ ZoneButtonClick(A_GuiEvent, Info*)
 GetTargetWindowToMoveAndResizeInfo(&mousePositionLeft, &mousePositionTop, &windowUnderMouseHandleID, &monitorDetails)
 {
     ; https://www.autohotkey.com/boards/viewtopic.php?p=540587#p540587
-    static windowsToAvoid := 'WorkerW Shell_TrayWnd Shell_SecondaryTrayWnd'
+    ; Progman                = Desktop
+    ; WorkerW                = Explorer Thread. WorkerW comes to the foreground when you press Win + D (minimize all windows)
+    ; Shell_TrayWnd          = TaskBar
+    ; Shell_SecondaryTrayWnd = 2nd TaskBar
+    static windowsToAvoid := 'WorkerW Shell_TrayWnd Shell_SecondaryTrayWnd Progman'
 
     ; we want mouse position based on screen, so temporarily set the current coordinate mode
     Local CMM := A_CoordModeMouse
