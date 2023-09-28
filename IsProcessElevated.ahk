@@ -1,89 +1,53 @@
-; https://www.autohotkey.com/boards/viewtopic.php?p=463753#p463753
-IsElevated(pid) {
-    local result := false, proc
-    local hToken := 0
-    static TOKEN_QUERY := 0x0008
-    static PROCESS_QUERY_INFORMATION := 0x0400
-    try {
-        if !proc := OpenProcess(PROCESS_QUERY_INFORMATION, false, pid) {
-            static ERROR_ACCESS_DENIED := 0x5
-            if !a_isadmin && a_lasterror == ERROR_ACCESS_DENIED
-                return true ; probably :=)
-            else throw OSError(, , 'OpenProcess')
-        }
-        if OpenProcessToken(proc, TOKEN_QUERY, &hToken) {
+; https://github.com/jNizM/ahk-scripts-v2/blob/main/src/ProcessThreadModule/IsProcessElevated.ahk
+; https://www.autohotkey.com/boards/viewtopic.php?p=540898#p540898
 
-            static sizeof_elevation := 4
-            static TokenElevation := 20
-            local cbSize := 4
-            local Elevation := 0
+; =============================================================================================================================================================
+; Author ........: jNizM
+; Released ......: 2017-01-10
+; Modified ......: 2023-01-16
+; Tested with....: AutoHotkey v2.0.2 (x64)
+; Tested on .....: Windows 11 - 22H2 (x64)
+; Function ......: IsProcessElevated()
+;
+; Parameter(s)...: ProcessID - The process identifier of the process.
+;
+; Return ........: Retrieves whether a token has elevated privileges.
+; =============================================================================================================================================================
 
-            if GetTokenInformation(hToken, TokenElevation, &Elevation, sizeof_elevation, &cbSize)
-                result := Elevation
-            else
-                throw OSError(, , 'GetTokenInformation')
+#Requires AutoHotkey v2.0
 
-        }
-        else
-            throw OSError(, , 'OpenProcessToken')
-    } finally {
-        if hToken
-            CloseHandle hToken
-        if proc
-            CloseHandle proc
+
+IsProcessElevated(ProcessID)
+{
+    static INVALID_HANDLE_VALUE              := -1
+    static PROCESS_QUERY_INFORMATION         := 0x0400
+    static PROCESS_QUERY_LIMITED_INFORMATION := 0x1000
+    static TOKEN_QUERY                       := 0x0008
+    static TOKEN_QUERY_SOURCE                := 0x0010
+    static TokenElevation                    := 20
+
+    hProcess := DllCall("OpenProcess", "UInt", PROCESS_QUERY_INFORMATION, "Int", False, "UInt", ProcessID, "Ptr")
+    if (!hProcess) || (hProcess = INVALID_HANDLE_VALUE)
+    {
+        hProcess := DllCall("OpenProcess", "UInt", PROCESS_QUERY_LIMITED_INFORMATION, "Int", False, "UInt", ProcessID, "Ptr")
+        if (!hProcess) || (hProcess = INVALID_HANDLE_VALUE)
+            throw OSError()
     }
-    return result
 
-    ; Windows lib:
-    /*
-    HANDLE OpenProcess(
-    [in] DWORD dwDesiredAccess,
-    [in] BOOL  bInheritHandle,
-    [in] DWORD dwProcessId
-    );
-    */
-    OpenProcess(dwDesiredAccess, bInheritHandle, dwProcessId)
-        => dllcall('Kernel32.dll\OpenProcess', 'uint', dwDesiredAccess, 'int', bInheritHandle, 'uint', dwProcessId, 'ptr')
+    if !(DllCall("advapi32\OpenProcessToken", "Ptr", hProcess, "UInt", TOKEN_QUERY | TOKEN_QUERY_SOURCE, "Ptr*", &hToken := 0))
+    {
+        DllCall("CloseHandle", "Ptr", hProcess)
+        throw OSError()
+    }
 
-    /*
-       BOOL OpenProcessToken(
-    [in]  HANDLE  ProcessHandle,
-    [in]  DWORD   DesiredAccess,
-    [out] PHANDLE TokenHandle
-    );
-    */
+    if !(DllCall("advapi32\GetTokenInformation", "Ptr", hToken, "Int", TokenElevation, "UInt*", &IsElevated := 0, "UInt", 4, "UInt*", &Size := 0))
+    {
+        DllCall("CloseHandle", "Ptr", hToken)
+        DllCall("CloseHandle", "Ptr", hProcess)
+        throw OSError()
+    }
 
-    OpenProcessToken(ProcessHandle, DesiredAccess, &TokenHandle)
-        => dllcall('Advapi32.dll\OpenProcessToken', 'ptr', ProcessHandle, 'uint', DesiredAccess, 'ptr*', &TokenHandle, 'int')
-    /*
-    BOOL GetTokenInformation(
-    [in]            HANDLE                  TokenHandle,
-    [in]            TOKEN_INFORMATION_CLASS TokenInformationClass,
-    [out, optional] LPVOID                  TokenInformation,
-    [in]            DWORD                   TokenInformationLength,
-    [out]           PDWORD                  ReturnLength
-    	);
-    */
-    GetTokenInformation(
-        TokenHandle,
-        TokenInformationClass,
-        &TokenInformation,
-        TokenInformationLength,
-        &ReturnLength
-    )
-        => dllcall('Advapi32.dll\GetTokenInformation',
-            'ptr', TokenHandle,
-            'ptr', TokenInformationClass,
-            'uint*', &TokenInformation,
-            'uint', TokenInformationLength,
-            'uint*', &ReturnLength
-        )
-    /*
-    BOOL CloseHandle(
-    [in] HANDLE hObject
-    );
-    */
-    CloseHandle(hObject)
-        => dllcall('Kernel32.dll\CloseHandle', 'ptr', hObject, 'int')
-    ; from: https://stackoverflow.com/questions/8046097/how-to-check-if-a-process-has-the-administrative-rights
+    DllCall("CloseHandle", "Ptr", hToken)
+    DllCall("CloseHandle", "Ptr", hProcess)
+    return IsElevated
 }

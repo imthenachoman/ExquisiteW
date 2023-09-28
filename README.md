@@ -11,7 +11,7 @@ After layouts have been configured, and ExquisiteW is running, you can use Exqui
 
 ![GUI with multiple monitors](images/GUI%20with%20multiple%20monitors.png)
 
-*ExquisiteW was [inspired by Exquisite](#httpsgithubcomqewer33exquisite) and written in [AutoHotKey](https://www.autohotkey.com/) with **a lot** of help from [malcev1](https://github.com/malcev1).*
+*ExquisiteW was [inspired by Exquisite](#httpsgithubcomqewer33exquisite) and the beta version was written in [AutoHotKey](https://www.autohotkey.com/) by [Malcev](https://www.autohotkey.com/boards/memberlist.php?mode=viewprofile&u=59835).*
 
 # Table of Contents <!-- omit from toc -->
 
@@ -23,8 +23,8 @@ After layouts have been configured, and ExquisiteW is running, you can use Exqui
 - [Using It](#using-it)
   - [Configuration File Specification](#configuration-file-specification)
     - [`settings.ini`](#settingsini)
+      - [Section `General`](#section-general)
       - [Section `Layout Selector`](#section-layout-selector)
-      - [Section `Layout Configuration`](#section-layout-configuration)
     - [`layouts.json`](#layoutsjson)
       - [`windowPaddingInPixels`](#windowpaddinginpixels)
       - [`layouts[].zones[].hotkey`](#layoutszoneshotkey)
@@ -56,8 +56,10 @@ After layouts have been configured, and ExquisiteW is running, you can use Exqui
 
 ## Requirements
 
-- Windows 10 (I only have Windows 10 to test on)
+- Windows 10 *
 - [AutoHotKey 2.0](https://www.autohotkey.com/)
+
+\* I only have Windows 10 machines. I do not have access to Windows 11 ([nor do I really want it](https://answers.microsoft.com/en-us/windows/forum/all/cant-un-combine-taskbar-items-in-windows-11-after/06f4aa5d-2a0a-4276-b2e1-a5680e8acd37)). If you have Windows 11 and are willing to help me test ExquisiteW, please [contact me](#support--help). 
 
 ## Installation
 
@@ -93,21 +95,23 @@ There are two configuration files used by ExquisiteW:
 
 This is a standard [INI file](https://en.wikipedia.org/wiki/INI_file) with some global, non-layout specific settings.
 
+#### Section `General`
+
+| Setting                  | Valid Options                | Default | Description                                                                                                                                                        |
+| ------------------------ | ---------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `Update Check Frequency` | whole number greater than -1 | `24`    | How often to check for updates, in hours: <ul><li>`-1` = check once at start up</li><li>`0` = do not check for updates</li><li>`X` = check every X hours</li></ul> |
+
+
 #### Section `Layout Selector`
 
-| Setting               | Valid Options                     | Default    | Description                                                                                                           |
-| --------------------- | --------------------------------- | ---------- | --------------------------------------------------------------------------------------------------------------------- |
-| `CloseAfterSelection` | `1` or `0`                        | `1`        | `1` = close ExquisiteW's GUI after you select a zone                                                                  |
-| `Opacity`             | whole number from `1` to `100`    | `100`      | `0` = make ExquisiteW's GUI completely transparent                                                                    |
-| `Trigger`             | [AHK HotKey](#autohotkey-hotkeys) | `^Mbutton` | The global keyboard shortcut to show ExquisiteW's GUI when the mouse is over a window/application that can be resized |
-
-#### Section `Layout Configuration`
-
-| Setting                   | Valid Options               | Default | Description                                           |
-| ------------------------- | --------------------------- | ------- | ----------------------------------------------------- |
-| `NumberOfLayoutsInARow`   | whole number greater than 1 | `4`     | Number of layouts per row in ExquisiteW's GUI         |
-| `LayoutBoxWidthInPixels`  | whole number greater than 1 | `200`   | Width of each layout (in pixels) in ExquisiteW's GUI  |
-| `LayoutBoxHeightInPixels` | whole number greater than 1 | `125`   | Height of each layout (in pixels) in ExquisiteW's GUI |
+| Setting                       | Valid Options                     | Default                  | Description                                                                                                                                |
+| ----------------------------- | --------------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `Close After Selection`       | `1` or `0`                        | `1`                      | <ul><li>`0` = leave ExquisiteW's GUI open after you select a zone</li><li>`1` = close it</li></ul>                                         |
+| `Opacity`                     | whole number from `0` to `100`    | `100`                    | <ul><li>`0` = make ExquisiteW's GUI completely transparent</li><li>`...` = percent transparent</li><li>`100` = completely opaque</li></ul> |
+| `Trigger`                     | [AHK HotKey](#autohotkey-hotkeys) | `^!d` (`ctrl + alt + d`) | The global keyboard shortcut to show ExquisiteW's GUI when the mouse is over a window/application that can be resized                      |
+| `Number Of Layouts In A Row`  | whole number greater than 3       | `4`                      | Number of layouts per row in ExquisiteW's GUI; `3` is the minimum                                                                          |
+| `Layout Box Width In Pixels`  | whole number greater than 50      | `200`                    | Width of each layout (in pixels) in ExquisiteW's GUI; `50` is the minimum                                                                  |
+| `Layout Box Height In Pixels` | whole number greater than 50      | `125`                    | Height of each layout (in pixels) in ExquisiteW's GUI; `50` is the minimum                                                                 |
 
 
 ### `layouts.json`
@@ -146,10 +150,10 @@ This is a standard [INI file](https://en.wikipedia.org/wiki/INI_file) with some 
 | `layouts[].name` *                        | string                            | Name of the layout to show in the GUI                                                                      |
 | `layouts[].windowPaddingInPixels`         | number                            | Window padding for all of zones in this layout (see [`windowPaddingInPixels`](#windowpaddinginpixels))     |
 | `layouts[].zones` *                       | array of zones                    | All of the zones for this layout                                                                           |
-| `layouts[].zones[].topLeftRowNumber` *    | 0-11                              | Row number of the top left corner of the window (see [How It Works](#how-it-works))                        |
-| `layouts[].zones[].topLeftColumnNumber` * | 0-11                              | Column number of the top left corner of the window (see [How It Works](#how-it-works))                     |
-| `layouts[].zones[].numberOfRows` *        | 1-12                              | Height of the window, in number of rows (see [How It Works](#how-it-works))                                |
-| `layouts[].zones[].numberOfColumns` *     | 1-12                              | Width of the window, in number of columns (see [How It Works](#how-it-works))                              |
+| `layouts[].zones[].topLeftRowNumber` *    | `0` - `11`                        | Row number of the top left corner of the window (see [How It Works](#how-it-works))                        |
+| `layouts[].zones[].topLeftColumnNumber` * | `0` - `11`                        | Column number of the top left corner of the window (see [How It Works](#how-it-works))                     |
+| `layouts[].zones[].numberOfRows` *        | `1` - `12`                        | Height of the window, in number of rows (see [How It Works](#how-it-works))                                |
+| `layouts[].zones[].numberOfColumns` *     | `1` - `12`                        | Width of the window, in number of columns (see [How It Works](#how-it-works))                              |
 | `layouts[].zones[].activator`             | letter                            | Single letter to activate a zone/button in the GUI                                                         |
 | `layouts[].zones[].hotkey`                | [AHK HotKey](#autohotkey-hotkeys) | Global shortcut to activate a zone without the GUI (see [`layouts[].zones[].hotkey`](#layoutszoneshotkey)) |
 | `layouts[].zones[].windowPaddingInPixels` | number                            | Window padding for this zone in this layout (see [`windowPaddingInPixels`](#windowpaddinginpixels))        |
@@ -201,17 +205,15 @@ You can get support/help in one of two ways:
 
 So I* decided to build a Windows clone of [Exquisite](https://github.com/qewer33/Exquisite).
 
-\* I didn't know [AutoHotKey](https://www.autohotkey.com/) when I started. I reached out to [malcev1](https://github.com/malcev1) who created the first version for me. I took [malcev1](https://github.com/malcev1)'s code tweaked it, and added features I needed.
+I didn't know [AutoHotKey](https://www.autohotkey.com/) when I started. I reached out to [Malcev](https://www.autohotkey.com/boards/memberlist.php?mode=viewprofile&u=59835) who created the beta version for me. I took [Malcev](https://www.autohotkey.com/boards/memberlist.php?mode=viewprofile&u=59835)'s code, with his permission, and ran with it.
 
 # Credits
 
-- [malcev1](https://github.com/malcev1) for the initial version
-- [niCode](https://www.autohotkey.com/boards/memberlist.php?mode=viewprofile&u=149812) for https://www.autohotkey.com/boards/viewtopic.php?p=540587#p540587
+- [Malcev](https://www.autohotkey.com/boards/memberlist.php?mode=viewprofile&u=59835) for the initial version
 - [andymbody](https://www.autohotkey.com/boards/memberlist.php?mode=viewprofile&u=79819) for https://www.autohotkey.com/boards/viewtopic.php?p=540471#p540471
-- [Helgef](https://www.autohotkey.com/boards/memberlist.php?mode=viewprofile&u=70632) for https://www.autohotkey.com/boards/viewtopic.php?p=463753#p463753
+- [jNizM](https://www.autohotkey.com/boards/memberlist.php?mode=viewprofile&u=75) for https://www.autohotkey.com/boards/viewtopic.php?p=540898#p540898
 - [just me](https://www.autohotkey.com/boards/memberlist.php?mode=viewprofile&u=148) for https://www.autohotkey.com/boards/viewtopic.php?p=539922#p539922  and https://www.autohotkey.com/boards/viewtopic.php?p=540310#p540310 
 - [neogna2](https://www.autohotkey.com/boards/memberlist.php?mode=viewprofile&u=72371) for https://www.autohotkey.com/boards/viewtopic.php?p=539921#p539921
-- [teadrinker](https://www.autohotkey.com/boards/memberlist.php?mode=viewprofile&u=62433) for https://www.autohotkey.com/boards/viewtopic.php?p=540162#p540162
+- [niCode](https://www.autohotkey.com/boards/memberlist.php?mode=viewprofile&u=149812) for https://www.autohotkey.com/boards/viewtopic.php?p=540587#p540587
 - [ntepa](https://www.autohotkey.com/boards/memberlist.php?mode=viewprofile&u=149849) for https://www.autohotkey.com/boards/viewtopic.php?p=540461#p540461
-
----
+- [teadrinker](https://www.autohotkey.com/boards/memberlist.php?mode=viewprofile&u=62433) for https://www.autohotkey.com/boards/viewtopic.php?p=540162#p540162

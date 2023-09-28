@@ -1,4 +1,5 @@
 ; https://github.com/thqby/ahk2_lib/blob/master/JSON.ahk
+; https://www.autohotkey.com/boards/viewtopic.php?p=539921#p539921
 
 /************************************************************************
  * @description: JSON格式字符串序列化和反序列化, 修改自[HotKeyIt/Yaml](https://github.com/HotKeyIt/Yaml)

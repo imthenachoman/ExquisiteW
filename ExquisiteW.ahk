@@ -1,6 +1,27 @@
-﻿#Requires AutoHotkey v2.0
+﻿; ExquisiteW
+;
+; A GUI driven window manager utility for Windows 10 that lets you create custom window layouts and then quickly move and resize windows to zones using a GUI or keyboard shortcuts.
+;
+; version : see VERSION below
+; homepage: https://github.com/imthenachoman/ExquisiteW
+; author  : Anchal Nigam
+; email   : imthenachoman@gmail.com
+
+#Requires AutoHotkey v2.0
 #Warn Unreachable, off
 #SingleInstance Force
+
+; GLOBAL CONSTANTS
+VERSION     := "1.0.0"
+GITHUB_REPO := "imthenachoman/ExquisiteW"
+HELP_URL    := "https://github.com/" GITHUB_REPO
+
+; global settings
+TraySetIcon A_ScriptDir "\ExquisiteW.ico"
+SetWinDelay -1                    ; no delay for window commands; https://www.autohotkey.com/docs/v1/lib/SetWinDelay.htm
+OnMessage(0x135, WM_REMOVESTATE)  ; WM_CTLCOLORBTN; catch messages sent to parent window when a button is drawn
+OnMessage(0x0053, WM_HELP)
+A_IconTip := "ExquisiteW v" VERSION
 
 ; needed to parse the layouts.json file
 #Include "%A_ScriptDir%\JSON.ahk"
@@ -8,48 +29,95 @@
 ; need to be able to see if a window is elevated
 #Include "%A_ScriptDir%\IsProcessElevated.ahk"
 
-; some global variables
-layoutSelectorGUI                         := Gui() ; the GUI
-layoutSelectorButtons                     := []    ; array of buttons in the GUI
-layoutSelectorGUIWindowHandleID           := 0
-layoutSelectorGUIWidth                    := 0
-layoutSelectorGUIHeight                   := 0
-targetWindowToMoveAndResizeWindowHandleID := 0
-allMonitorDetails                         := getAllMonitorDetails()
-
-; read settings from settings.ini
-setting_CloseAfterSelection     := IniRead(A_ScriptDir "\settings.ini", "Layout Selector", "CloseAfterSelection", 1)
-setting_Trigger                 := IniRead(A_ScriptDir "\settings.ini", "Layout Selector", "Trigger", "^Mbutton")
+; global variables
+; layoutSelectorGUI               = the GUI
+; layoutSelectorGUIWindowHandleID
+; layoutSelectorButtons           = array of buttons in the GUI
+; layoutSelectorGUIWidth
+; layoutSelectorGUIHeight
+; targetWindowToMoveAndResizeWindowHandleID
+; allMonitorDetails
+; setting_CloseAfterSelection
+; isAdminCheckForMovingWindowsNeeded
 
 ; create the GUI
 TheMainEvent
 
-; enable the trigger
-HotKey setting_Trigger, ShowGUI
-
-; let the user know it's started
-TrayTip "Press '" setting_Trigger "' to show the GUI.", "ExquisiteW Started", "0x4 0x20 Mute"
-
 ; function to create the actual GUI
 TheMainEvent()
 {
-    global layoutSelectorGUI
-    global layoutSelectorButtons
+    global isAdminCheckForMovingWindowsNeeded := false
+    global allMonitorDetails := getAllMonitorDetails()
+    
+    ; read settings from settings.ini
+    global setting_CloseAfterSelection := IniRead(A_ScriptDir "\settings.ini", "Layout Selector", "Close After Selection", 1    )
+    setting_Trigger                    := IniRead(A_ScriptDir "\settings.ini", "Layout Selector", "Trigger"              , "^!d")
+
+    ; create the GUI
+    CreateGUI
+
+    ; if ExquisiteW is running as admin or as admin UI rights, we can move admin windows
+    ; so we need to check if the script is running as admin
+    if !A_IsAdmin
+    {
+        DllCall("advapi32.dll\OpenProcessToken", "ptr", DllCall("GetCurrentProcess", "ptr"), "uint", TOKEN_QUERY := 0x0008, "ptr*", &hTokenSelf := 0)
+        DllCall("advapi32\GetTokenInformation", "ptr", hTokenSelf, "uint", 26, "uint*", &TokenUIAccess := 0, "uint", 4, "uint*", &ReturnLength := 0)
+        DllCall("CloseHandle", "ptr", hTokenSelf)
+        if !TokenUIAccess
+        {
+            isAdminCheckForMovingWindowsNeeded := true
+        }
+    }
+
+    ; enable the trigger
+    HotKey setting_Trigger, ShowGUI
+
+    ; let the user know it's started
+    TrayTip "Press '" setting_Trigger "' to show the GUI.", "ExquisiteW Started", "0x4 0x20 Mute"
+
+    ; if we are reloading, then show the UI again
+    if (A_Args.length = 1) and (A_Args[1] = "reloaded")
+    {
+        ShowGUI("")
+    }
+
+    ; see if we want to check for updates
+    updateCheckFrequency := IniRead(A_ScriptDir "\settings.ini", "General", "Update Check Frequency", 24)
+
+    ; only if it's not disabled
+    if (updateCheckFrequency != 0)
+    {
+        ; only if we don't have it set to check once
+        if (updateCheckFrequency != -1)
+        {
+            SetTimer CheckFoUpdates, updateCheckFrequency * 1000 * 60 * 60
+        }
+
+        ; do initial check
+        CheckFoUpdates
+    }
+
+}
+
+; create the GUI
+CreateGUI()
+{
+    global layoutSelectorGUI               := Gui()
+    global layoutSelectorGUIWindowHandleID := layoutSelectorGUI.Hwnd
+    global layoutSelectorButtons           := []
     global layoutSelectorGUIWidth
     global layoutSelectorGUIHeight
 
-    ; global settings
-    SetWinDelay -1                    ; no delay for window commands; https://www.autohotkey.com/docs/v1/lib/SetWinDelay.htm
-    OnMessage(0x135, WM_REMOVESTATE)  ; WM_CTLCOLORBTN; catch messages sent to parent window when a button is drawn
-
     ; read settings
-    setting_NumberOfLayoutsInARow   := IniRead(A_ScriptDir "\settings.ini", "Layout Configuration", "NumberOfLayoutsInARow"  , 4  )
-    setting_LayoutBoxWidthInPixels  := IniRead(A_ScriptDir "\settings.ini", "Layout Configuration", "LayoutBoxWidthInPixels" , 200)
-    setting_LayoutBoxHeightInPixels := IniRead(A_ScriptDir "\settings.ini", "Layout Configuration", "LayoutBoxHeightInPixels", 125)
-    setting_Opacity                 := IniRead(A_ScriptDir "\settings.ini", "Layout Selector"     , "Opacity"                , 100)
+    setting_NumberOfLayoutsInARow   := IniRead(A_ScriptDir "\settings.ini", "Layout Selector", "Number Of Layouts In A Row" , 4  )
+    setting_LayoutBoxWidthInPixels  := IniRead(A_ScriptDir "\settings.ini", "Layout Selector", "Layout Box Width In Pixels" , 200)
+    setting_LayoutBoxHeightInPixels := IniRead(A_ScriptDir "\settings.ini", "Layout Selector", "Layout Box Height In Pixels", 125)
+    setting_Opacity                 := IniRead(A_ScriptDir "\settings.ini", "Layout Selector", "Opacity"                    , 100)
 
     ; we need a minimum of 3 columns
-    setting_NumberOfLayoutsInARow := setting_NumberOfLayoutsInARow < 3 ? 3 : setting_NumberOfLayoutsInARow
+    setting_NumberOfLayoutsInARow   := setting_NumberOfLayoutsInARow < 3 ? 3 : setting_NumberOfLayoutsInARow
+    setting_LayoutBoxWidthInPixels  := setting_LayoutBoxWidthInPixels < 50 ? 50 : setting_LayoutBoxWidthInPixels
+    setting_LayoutBoxHeightInPixels := setting_LayoutBoxHeightInPixels < 50 ? 50 : setting_LayoutBoxHeightInPixels
 
     ; ; some measurement calculations
     groupBoxInsidePadding                    := 5
@@ -69,7 +137,7 @@ TheMainEvent()
 
     ; create the GUI
     layoutSelectorGUI.SetFont("s12", "Calibri")
-    layoutSelectorGUI.Title := "ExquisiteW"
+    layoutSelectorGUI.Title := "ExquisiteW v" VERSION
     layoutSelectorGUI.Opt("+AlwaysOnTop -MinimizeBox -DPIScale")
     layoutSelectorGUI.OnEvent("Close", ProcessUserInput)
     layoutSelectorGUI.OnEvent("Escape", ProcessUserInput) ; allow closing with the escape key
@@ -78,10 +146,9 @@ TheMainEvent()
     if (setting_Opacity != 100)
     {
         WinSetTransColor("FF0000 " Round(setting_Opacity / 100 * 255), layoutSelectorGUI)
+        ; WinSetTransColor(Round(setting_Opacity / 100 * 255), layoutSelectorGUI)
     }
 
-    ; we need the GUI window handle ID so we can reference it later
-    global layoutSelectorGUIWindowHandleID := layoutSelectorGUI.Hwnd
 
     ; this is how wide the inside of the box will be
     insideWidthInPixels := (((setting_LayoutBoxWidthInPixels + layoutSelectorGUI.MarginX) * numberOfActualColumnsInGUI) - layoutSelectorGUI.MarginX)
@@ -101,7 +168,6 @@ TheMainEvent()
         ; add a group box
         layoutSelectorGUI.Add("GroupBox", "Section" groupBoxLeftPosition groupBoxTopPosition " w" setting_LayoutBoxWidthInPixels " h" setting_LayoutBoxHeightInPixels, "  " layoutSpecification["name"] "  ")
         
-
         ; go through each zone
         for arrayIndex1, layoutZoneSpecification in layoutSpecification["zones"]
         {
@@ -155,7 +221,7 @@ TheMainEvent()
     ; add a help link button
     ; starts from left
     ; goes 10 pixels down above the horizontal line (we'll move it later)
-    helpLink := layoutSelectorGUI.add("Link", "xm yp+10 w" setting_LayoutBoxWidthInPixels, '<a href="https://www.google.com">Help</a>')
+    helpLink := layoutSelectorGUI.add("Link", "xm yp+10 w" setting_LayoutBoxWidthInPixels, '<a href="' HELP_URL '">Help</a>')
     helpLink.GetPos(&helpLinkLeft, &helpLinkTop, &helpLinkWidth, &helpLinkHeight)
     
     ; add a cancel button
@@ -166,6 +232,15 @@ TheMainEvent()
     cancelButton.OnEvent("Click", ProcessUserInput)
     cancelButton.GetPos(&cancelButtonLeft, &cancelButtonTop, &cancelButtonWidth, &cancelButtonHeight)
 
+    ; add a reload button
+    ; sarts from left (we'll move it later)
+    ; and top is aligned with the link from above
+    reloadButton := layoutSelectorGUI.add("button", "xm yp+0", "Reload")
+    layoutSelectorButtons.Push(reloadButton)
+    reloadButton.OnEvent("Click", ReloadExquisiteW)
+    reloadButton.GetPos(&reloadButtonLeft, &reloadButtonTop, &reloadButtonWidth, &reloadButtonHeight)
+    
+    allMonitorDetails := [1, 2, 3]
     ; if we have multiple monitors, we need to show a monitor selection
     if (allMonitorDetails.Length > 1)
     {
@@ -199,13 +274,15 @@ TheMainEvent()
         
         ; we need to move the help link and cancel button
         groupBox.GetPos(&groupBoxLeft, &groupBoxTop, &groupBoxWidth, &groupBoxHeight)
-        cancelButton.Move(insideWidthInPixels - cancelButtonWidth + layoutSelectorGUI.MarginX, cancelButtonTop + (groupBoxHeight - cancelButtonHeight))
+        cancelButton.Move(insideWidthInPixels - (cancelButtonWidth + layoutSelectorGUI.MarginX), cancelButtonTop + (groupBoxHeight - cancelButtonHeight))
+        reloadButton.Move(insideWidthInPixels - (cancelButtonWidth + layoutSelectorGUI.MarginX + reloadButtonWidth + layoutSelectorGUI.MarginX), reloadButtonTop + (groupBoxHeight - cancelButtonHeight))
         helpLink.Move(, helpLinkTop + (groupBoxHeight - helpLinkHeight))
     }
     else
     {
         ; we need to move the help link and cancel button
         cancelButton.Move(insideWidthInPixels - cancelButtonWidth + layoutSelectorGUI.MarginX)
+        reloadButton.Move(insideWidthInPixels - reloadButtonWidth - cancelButtonWidth)
         helpLink.Move(, helpLinkTop + (cancelButtonHeight - helpLinkHeight))
     }
 
@@ -229,6 +306,17 @@ ProcessUserInput(*)
     global layoutSelectorGUI
     
     layoutSelectorGUI.hide()
+    return
+}
+
+ReloadExquisiteW(*)
+{
+    if A_IsCompiled
+        Run Format('"{1}" /force /restart', A_ScriptFullPath)
+    else
+        Run Format('"{1}" /force /restart "{2}" reloaded', A_AhkPath, A_ScriptFullPath)
+    ExitApp
+
     return
 }
 
@@ -257,8 +345,6 @@ GetTargetWindowToMoveAndResizeInfo(&mousePositionLeft, &mousePositionTop, &windo
     ; https://www.autohotkey.com/boards/viewtopic.php?p=540587#p540587
     static windowsToAvoid := 'WorkerW Shell_TrayWnd Shell_SecondaryTrayWnd'
 
-    global targetWindowToMoveAndResizeWindowHandleID
-
     ; we want mouse position based on screen, so temporarily set the current coordinate mode
     Local CMM := A_CoordModeMouse
     A_CoordModeMouse := "Screen"
@@ -279,9 +365,9 @@ GetTargetWindowToMoveAndResizeInfo(&mousePositionLeft, &mousePositionTop, &windo
         TrayTip "Cannot get the window under the mouse.", "ExquisiteW Error", "Mute Iconx"
         return false
     }
-
+    
     ; get the PID of the window and see if it is running elevated
-    if (IsElevated(WinGetPID("ahk_id " windowUnderMouseHandleID)) = 1)
+    if isAdminCheckForMovingWindowsNeeded and (IsProcessElevated(WinGetPID("ahk_id " windowUnderMouseHandleID)) = 1)
     {
         TrayTip "Cannot interact with applications running as administrator.", "ExquisiteW Error", "Mute Iconx"
         return false
@@ -294,7 +380,7 @@ GetTargetWindowToMoveAndResizeInfo(&mousePositionLeft, &mousePositionTop, &windo
     }
 
     ; set the target window to move
-    targetWindowToMoveAndResizeWindowHandleID := windowUnderMouseHandleID
+    global targetWindowToMoveAndResizeWindowHandleID := windowUnderMouseHandleID
 
     ; get the details of the monitor the mouse is on
     monitorDetails := getDetailsOfMonitorMouseIsIn(&mousePositionLeft, &mousePositionTop)
@@ -374,6 +460,9 @@ ShowGUI(ThisHotKey)
 ; move the window
 MoveAndResizeWindow(windowHandleID, topLeftRowNumber, topLeftColumnNumber, numberOfRows, numberOfColumns, paddingInPixels, monitorIndex)
 {
+    ; we want modal msgbox (https://www.autohotkey.com/docs/v2/lib/Gui.htm#OwnDialogs)
+    layoutSelectorGUI.Opt("+OwnDialogs")
+
     ; get details about the monitor we are moving to
     monitorDetails := allMonitorDetails[monitorIndex]
 
@@ -383,32 +472,34 @@ MoveAndResizeWindow(windowHandleID, topLeftRowNumber, topLeftColumnNumber, numbe
     getWindowInfoResponse := DllCall("GetWindowInfo", "uptr", targetWindowToMoveAndResizeWindowHandleID, "ptr", targetWindowToMoveAndResizeWindowInfo)
     if !getWindowInfoResponse
     {
-        MsgBox("Cannot get position of window hwnd: " targetWindowToMoveAndResizeWindowHandleID)
-        return
+        MsgBox("Cannot get position of window hwnd: " targetWindowToMoveAndResizeWindowHandleID ".", "ExquisiteW Error", "OK Iconx 0x1000 0x4000")
     }
-    clientWindowLeftPadding   := NumGet(targetWindowToMoveAndResizeWindowInfo, 20, "int") - NumGet(targetWindowToMoveAndResizeWindowInfo, 4, "int")
-    clientWindowRightPadding  := NumGet(targetWindowToMoveAndResizeWindowInfo, 12, "int") - NumGet(targetWindowToMoveAndResizeWindowInfo, 28, "int")
-    clientWindowBottomPadding := NumGet(targetWindowToMoveAndResizeWindowInfo, 16, "int") - NumGet(targetWindowToMoveAndResizeWindowInfo, 32, "int")
-
-    ; calculate the window's new dimensions
-    newLeft   := (monitorDetails.workArea.left + monitorDetails.workArea.width * round(100 * topLeftColumnNumber / 12) / 100) - clientWindowLeftPadding + paddingInPixels
-    newTop    := (monitorDetails.workArea.top + monitorDetails.workArea.height * round(100 * topLeftRowNumber / 12) / 100) + paddingInPixels
-    newWidth  := (monitorDetails.workArea.width * round(100 * numberOfColumns / 12) / 100) + clientWindowLeftPadding + clientWindowRightPadding - paddingInPixels - paddingInPixels
-    newHeight := (monitorDetails.workArea.height * round(100 * numberOfRows / 12) / 100) + clientWindowBottomPadding - paddingInPixels - paddingInPixels
-
-    ; get the status of the current window
-    WinStatus := WinGetMinMax("ahk_id " targetWindowToMoveAndResizeWindowHandleID)
-    if (WinStatus = 0) or (WinStatus = 1)
+    else
     {
-        if (WinStatus = 1)
-            WinRestore("ahk_id " targetWindowToMoveAndResizeWindowHandleID)
-        try
+        clientWindowLeftPadding := NumGet(targetWindowToMoveAndResizeWindowInfo, 20, "int") - NumGet(targetWindowToMoveAndResizeWindowInfo, 4, "int")
+        clientWindowRightPadding := NumGet(targetWindowToMoveAndResizeWindowInfo, 12, "int") - NumGet(targetWindowToMoveAndResizeWindowInfo, 28, "int")
+        clientWindowBottomPadding := NumGet(targetWindowToMoveAndResizeWindowInfo, 16, "int") - NumGet(targetWindowToMoveAndResizeWindowInfo, 32, "int")
+
+        ; calculate the window's new dimensions
+        newLeft := monitorDetails.workArea.left + (monitorDetails.workArea.width * topLeftColumnNumber / 12) - clientWindowLeftPadding + paddingInPixels
+        newTop := monitorDetails.workArea.top + (monitorDetails.workArea.height * topLeftRowNumber / 12) + paddingInPixels
+        newWidth := (monitorDetails.workArea.width * numberOfColumns / 12) + clientWindowLeftPadding + clientWindowRightPadding - paddingInPixels - paddingInPixels
+        newHeight := (monitorDetails.workArea.height * numberOfRows / 12) + clientWindowBottomPadding - paddingInPixels - paddingInPixels
+
+        ; get the status of the current window
+        WinStatus := WinGetMinMax("ahk_id " targetWindowToMoveAndResizeWindowHandleID)
+        if (WinStatus = 0) or (WinStatus = 1)
         {
-            WinMove(newLeft, newTop, newWidth, newHeight, "ahk_id " targetWindowToMoveAndResizeWindowHandleID)
-        }
-        catch as err
-        {
-            MsgBox("Cannot move window hwnd: " targetWindowToMoveAndResizeWindowHandleID "`n" type(err) ": " err.Message)
+            if (WinStatus = 1)
+                WinRestore("ahk_id " targetWindowToMoveAndResizeWindowHandleID)
+            try
+            {
+                WinMove(newLeft, newTop, newWidth, newHeight, "ahk_id " targetWindowToMoveAndResizeWindowHandleID)
+            }
+            catch as err
+            {
+                MsgBox("Cannot move window hwnd: " targetWindowToMoveAndResizeWindowHandleID ". `n`n" type(err) ": " err.Message, "ExquisiteW Error", "OK Iconx 0x1000 0x4000")
+            }
         }
     }
 
@@ -470,4 +561,52 @@ getDetailsOfMonitorMouseIsIn(&mousePositionLeft, &mousePositionTop)
         }
     }
     return -1
+}
+
+WM_HELP(wParam, lParam, msg, hwnd)
+{
+    Run HELP_URL
+}
+
+; https://www.autohotkey.com/docs/v2/lib/Download.htm#ExXHR
+CheckFoUpdates()
+{
+    ; let the user know we're checking for updates
+    TrayTip "Checking for updates.", "ExquisiteW Updater", "0x4 0x20 Mute"
+
+    ; https://www.autohotkey.com/docs/v2/lib/Download.htm#ExXHR
+
+    req := ComObject("Msxml2.XMLHTTP")
+    req.open("GET", "https://api.github.com/repos/" GITHUB_REPO "/releases/latest", true)
+    req.onreadystatechange := CheckFoUpdates_Ready.Bind(req)
+    req.send()
+}
+
+; https://www.autohotkey.com/docs/v2/lib/Download.htm#ExXHR
+CheckFoUpdates_Ready(req)
+{
+    if (req.readyState != 4)
+    {
+        return
+    }
+    if (req.status == 200)
+    {
+        ; we want modal msgbox (https://www.autohotkey.com/docs/v2/lib/Gui.htm#OwnDialogs)
+        global layoutSelectorGUI
+        layoutSelectorGUI.Opt("+OwnDialogs")
+
+        data := JSON.parse(req.responseText)
+        if (data["name"] != VERSION) and (MsgBox("A newer version is available.`n`nCurrent Version: " VERSION "`nNew Version: " data["name"] "`n`nWould you like to go to the download page?", "ExquisiteW Update", "YesNo Icon? 0x1000") = "Yes")
+        {
+            Run "https://github.com/" GITHUB_REPO "/releases/latest"
+        }
+    }
+    else
+    {
+        ; we want modal msgbox (https://www.autohotkey.com/docs/v2/lib/Gui.htm#OwnDialogs)
+        global layoutSelectorGUI
+        layoutSelectorGUI.Opt("+OwnDialogs")
+
+        MsgBox "Latest AutoHotkey version: " req.responseText, "ExquisiteW Update Error", "Iconx 0x1000"
+    }
 }
