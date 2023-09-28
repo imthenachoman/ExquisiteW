@@ -1,6 +1,6 @@
 ﻿; ExquisiteW
 ;
-; A GUI driven window manager utility for Windows 10 that lets you create custom window layouts and then quickly move and resize windows to zones using a GUI or keyboard shortcuts.
+; A customizable GUI driven window manager utility for Windows 10 that lets you create custom window layouts and then quickly move and resize windows to zones using a GUI or keyboard shortcuts.
 ;
 ; version : see VERSION below
 ; homepage: https://github.com/imthenachoman/ExquisiteW
