@@ -596,7 +596,7 @@ CheckFoUpdates_Ready(req)
         layoutSelectorGUI.Opt("+OwnDialogs")
 
         data := JSON.parse(req.responseText)
-        if (data["name"] != VERSION) and (MsgBox("A newer version is available.`n`nCurrent Version: " VERSION "`nNew Version: " data["name"] "`n`nWould you like to go to the download page?", "ExquisiteW Update", "YesNo Icon? 0x1000") = "Yes")
+        if (data["tag_name"] != VERSION) and (MsgBox("A newer version is available.`n`nCurrent Version: " VERSION "`nNew Version: " data["tag_name"] "`n`nWould you like to go to the download page?", "ExquisiteW Update", "YesNo Icon? 0x1000") = "Yes")
         {
             Run "https://github.com/" GITHUB_REPO "/releases/latest"
         }
