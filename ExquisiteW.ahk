@@ -12,7 +12,7 @@
 #SingleInstance Force
 
 ; GLOBAL CONSTANTS
-VERSION     := "1.0.0"
+VERSION     := "v1.0.0"
 GITHUB_REPO := "imthenachoman/ExquisiteW"
 HELP_URL    := "https://github.com/" GITHUB_REPO
 
