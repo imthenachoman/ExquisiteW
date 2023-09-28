@@ -240,7 +240,7 @@ CreateGUI()
     reloadButton.OnEvent("Click", ReloadExquisiteW)
     reloadButton.GetPos(&reloadButtonLeft, &reloadButtonTop, &reloadButtonWidth, &reloadButtonHeight)
     
-    allMonitorDetails := [1, 2, 3]
+    ; allMonitorDetails := [1, 2, 3]
     ; if we have multiple monitors, we need to show a monitor selection
     if (allMonitorDetails.Length > 1)
     {
@@ -274,8 +274,8 @@ CreateGUI()
         
         ; we need to move the help link and cancel button
         groupBox.GetPos(&groupBoxLeft, &groupBoxTop, &groupBoxWidth, &groupBoxHeight)
-        cancelButton.Move(insideWidthInPixels - (cancelButtonWidth + layoutSelectorGUI.MarginX), cancelButtonTop + (groupBoxHeight - cancelButtonHeight))
-        reloadButton.Move(insideWidthInPixels - (cancelButtonWidth + layoutSelectorGUI.MarginX + reloadButtonWidth + layoutSelectorGUI.MarginX), reloadButtonTop + (groupBoxHeight - cancelButtonHeight))
+        cancelButton.Move(insideWidthInPixels - cancelButtonWidth + layoutSelectorGUI.MarginX, cancelButtonTop + (groupBoxHeight - cancelButtonHeight))
+        reloadButton.Move(insideWidthInPixels - cancelButtonWidth + layoutSelectorGUI.MarginX - reloadButtonWidth - layoutSelectorGUI.MarginX, reloadButtonTop + (groupBoxHeight - cancelButtonHeight))
         helpLink.Move(, helpLinkTop + (groupBoxHeight - helpLinkHeight))
     }
     else
