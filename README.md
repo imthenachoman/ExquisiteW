@@ -205,7 +205,7 @@ You can get support/help in one of two ways:
 
 So I* decided to build a Windows clone of [Exquisite](https://github.com/qewer33/Exquisite).
 
-I didn't know [AutoHotKey](https://www.autohotkey.com/) when I started. I reached out to [Malcev](https://www.autohotkey.com/boards/memberlist.php?mode=viewprofile&u=59835) who created the beta version for me. I took his's code -- with his permission -- and ran with it. (In the interest of transprency, I paid him for his work.)
+Disclaimer: I didn't know [AutoHotKey](https://www.autohotkey.com/) when I started. I reached out to [Malcev](https://www.autohotkey.com/boards/memberlist.php?mode=viewprofile&u=59835) who created the beta version for me. I took his's code -- with his permission -- and ran with it. (In the interest of transprency, I paid him for his work.)
 
 # Credits
 
