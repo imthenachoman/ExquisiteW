@@ -607,6 +607,6 @@ CheckFoUpdates_Ready(req)
         global layoutSelectorGUI
         layoutSelectorGUI.Opt("+OwnDialogs")
 
-        MsgBox "Latest AutoHotkey version: " req.responseText, "ExquisiteW Update Error", "Iconx 0x1000"
+        MsgBox("Latest AutoHotkey version: " req.responseText, "ExquisiteW Update Error", "Iconx 0x1000")
     }
 }
