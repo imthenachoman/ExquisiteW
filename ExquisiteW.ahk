@@ -12,7 +12,7 @@
 #SingleInstance Force
 
 ; GLOBAL CONSTANTS
-VERSION     := "v1.0.0"
+VERSION     := "v1.1.0"
 GITHUB_REPO := "imthenachoman/ExquisiteW"
 HELP_URL    := "https://github.com/" GITHUB_REPO
 
@@ -129,8 +129,9 @@ CreateGUI()
     ; read the layouts
     layoutsData := JSON.parse(FileRead(A_ScriptDir "\layouts.json"))
 
-    ; read global windowPaddingInPixels
+    ; read global settings
     windowPaddingInPixels_global := layoutsData.has("windowPaddingInPixels") ? layoutsData["windowPaddingInPixels"] : 0
+    padAtMonitorEdges_global     := layoutsData.has("padAtMonitorEdges"    ) ? layoutsData["padAtMonitorEdges"    ] : false
 
     ; how many columns of layouts will we have
     numberOfActualColumnsInGUI := layoutsData["layouts"].Length < setting_NumberOfLayoutsInARow ? layoutsData["layouts"].Length : setting_NumberOfLayoutsInARow
@@ -164,6 +165,7 @@ CreateGUI()
     {
         ; get global zone
         windowPaddingInPixels_layout := layoutSpecification.Has("windowPaddingInPixels") ? layoutSpecification["windowPaddingInPixels"] : windowPaddingInPixels_global
+        padAtMonitorEdges_layout     := layoutSpecification.Has("padAtMonitorEdges"    ) ? layoutSpecification["padAtMonitorEdges"    ] : padAtMonitorEdges_global
 
         ; add a group box
         layoutSelectorGUI.Add("GroupBox", "Section" groupBoxLeftPosition groupBoxTopPosition " w" setting_LayoutBoxWidthInPixels " h" setting_LayoutBoxHeightInPixels, "  " layoutSpecification["name"] "  ")
@@ -179,7 +181,8 @@ CreateGUI()
             layoutZoneSpecification_activator           := layoutZoneSpecification.Has("activator") ? "&" SubStr(layoutZoneSpecification["activator"], 1, 1) : ""
             layoutZoneSpecification_hotkey              := layoutZoneSpecification.Has("hotkey") ? layoutZoneSpecification["hotkey"] : ""
             
-            windowPaddingInPixels_zone                    := layoutZoneSpecification.Has("windowPaddingInPixels") ? layoutZoneSpecification["windowPaddingInPixels"] : windowPaddingInPixels_layout
+            windowPaddingInPixels_zone                  := layoutZoneSpecification.Has("windowPaddingInPixels") ? layoutZoneSpecification["windowPaddingInPixels"] : windowPaddingInPixels_layout
+            padAtMonitorEdges_zone                      := layoutZoneSpecification.Has("padAtMonitorEdges"    ) ? layoutZoneSpecification["padAtMonitorEdges"    ] : padAtMonitorEdges_layout
             
             ; figure out where the button will go
             buttonLeft   := "xs+" groupBoxInsidePadding + (layoutButtonsAvailableAreaWidthInPixels / 12) * layoutZoneSpecification_topLeftColumnNumber
@@ -194,11 +197,11 @@ CreateGUI()
             layoutSelectorButtons.Push(zoneButton)
 
             ; add a click event for the button
-            zoneButton.OnEvent("Click", ZoneButtonClick.Bind("Normal", layoutZoneSpecification_topLeftRowNumber, layoutZoneSpecification_topLeftColumnNumber, layoutZoneSpecification_numberOfRows, layoutZoneSpecification_numberOfColumns, windowPaddingInPixels_zone))
+            zoneButton.OnEvent("Click", ZoneButtonClick.Bind("Normal", layoutZoneSpecification_topLeftRowNumber, layoutZoneSpecification_topLeftColumnNumber, layoutZoneSpecification_numberOfRows, layoutZoneSpecification_numberOfColumns, windowPaddingInPixels_zone, padAtMonitorEdges_zone))
 
             if (layoutZoneSpecification_hotkey)
             {
-                Hotkey layoutZoneSpecification_hotkey, ZoneShortcutResponse.Bind(layoutZoneSpecification_topLeftRowNumber, layoutZoneSpecification_topLeftColumnNumber, layoutZoneSpecification_numberOfRows, layoutZoneSpecification_numberOfColumns, windowPaddingInPixels_zone)
+                Hotkey layoutZoneSpecification_hotkey, ZoneGlobalShortcutResponse.Bind(layoutZoneSpecification_topLeftRowNumber, layoutZoneSpecification_topLeftColumnNumber, layoutZoneSpecification_numberOfRows, layoutZoneSpecification_numberOfColumns, windowPaddingInPixels_zone, padAtMonitorEdges_zone)
             }
         }
 
@@ -294,18 +297,59 @@ CreateGUI()
     layoutSelectorGUI.GetPos(&junk, &junk, &layoutSelectorGUIWidth, &layoutSelectorGUIHeight)
 }
 
-; removes blue border from button remaining after clicking
-WM_REMOVESTATE(wParam, lParam, msg, hwnd)
-{
-    ControlSetStyle(-0x1, lParam, "ahk_id " hwnd)
-    return
-}
-
-ProcessUserInput(*)
+; show the GUI
+ShowGUI(ThisHotKey)
 {
     global layoutSelectorGUI
-    
-    layoutSelectorGUI.hide()
+
+    ; get necessary details
+    if !GetTargetWindowToMoveAndResizeInfo(&mousePositionLeft, &mousePositionTop, &windowUnderMouseHandleID, &monitorDetails)
+    {
+        return
+    }
+
+    ; set the active application text the window the mouse was over
+    layoutSelectorGUI["activeApplicationName"].Text := WinGetProcessName(windowUnderMouseHandleID) " > " WinGetTitle(windowUnderMouseHandleID)
+
+    ; if there are multiple monitors
+    ; update the selected radio
+    if (allMonitorDetails.Length > 1)
+    {
+        ; select the current monitor radio button
+        firstMonitorRadioButtonNN := ControlGetClassNN(layoutSelectorGUI["monitorSelection"])
+        firstMonitorRadioButtonNumber := SubStr(firstMonitorRadioButtonNN, 7)
+        layoutSelectorGUI['Button' . (firstMonitorRadioButtonNumber + monitorDetails.index - 1)].Value := 1
+    }
+
+    ; we want the GUI to be centered under the mouse
+    ; for that we need to know the top/left of the GUI based on the mouse
+    layoutSelectorGUILeft := mousePositionLeft - round(layoutSelectorGUIWidth / 2)
+    ; but we need to account for situations where the mouse is near the edge and the GUI will be offscreen
+    if (layoutSelectorGUILeft < monitorDetails.workArea.Left)
+    {
+        layoutSelectorGUILeft := monitorDetails.workArea.Left
+    }
+    else if ((layoutSelectorGUILeft + layoutSelectorGUIWidth) > monitorDetails.workArea.Right)
+    {
+        layoutSelectorGUILeft := layoutSelectorGUILeft - ((layoutSelectorGUILeft + layoutSelectorGUIWidth) - monitorDetails.workArea.Right)
+    }
+
+    layoutSelectorGUITop := mousePositionTop - round(layoutSelectorGUIHeight / 2)
+    if (layoutSelectorGUITop < monitorDetails.workArea.Top)
+    {
+        layoutSelectorGUITop := monitorDetails.workArea.Top
+    }
+    else if ((layoutSelectorGUITop + layoutSelectorGUIHeight) > monitorDetails.workArea.Bottom)
+    {
+        layoutSelectorGUITop := layoutSelectorGUITop - ((layoutSelectorGUITop + layoutSelectorGUIHeight) - monitorDetails.workArea.Bottom)
+    }
+
+    ; move the GUI to the right place so it is centered under the mouse
+    layoutSelectorGUI.Move(layoutSelectorGUILeft, layoutSelectorGUITop)
+
+    ; show the GUI
+    layoutSelectorGUI.show()
+
     return
 }
 
@@ -328,14 +372,103 @@ ZoneButtonClick(A_GuiEvent, Info*)
     layoutZoneSpecification_topLeftColumnNumber := Info[2]
     layoutZoneSpecification_numberOfRows        := Info[3]
     layoutZoneSpecification_numberOfColumns     := Info[4]
-    paddingInPixels                             := Info[5]
+    windowPaddingInPixels                       := Info[5]
+    padAtMonitorEdges                           := Info[6]
+    
     
     ; get the monitor index to send the window to
     submitInfo     := layoutSelectorGUI.Submit(false)
     monitorIndex   := submitInfo.HasOwnProp("monitorSelection") ? submitInfo.monitorSelection : 1
+    
+    MoveAndResizeWindow(targetWindowToMoveAndResizeWindowHandleID, layoutZoneSpecification_topLeftRowNumber, layoutZoneSpecification_topLeftColumnNumber, layoutZoneSpecification_numberOfRows, layoutZoneSpecification_numberOfColumns, windowPaddingInPixels, padAtMonitorEdges, monitorIndex)
 
-    MoveAndResizeWindow(targetWindowToMoveAndResizeWindowHandleID, layoutZoneSpecification_topLeftRowNumber, layoutZoneSpecification_topLeftColumnNumber, layoutZoneSpecification_numberOfRows, layoutZoneSpecification_numberOfColumns, paddingInPixels, monitorIndex)
+    return
+}
 
+; runs when a global zone shortcut is run
+ZoneGlobalShortcutResponse(topLeftRowNumber, topLeftColumnNumber, numberOfRows, numberOfColumns, windowPaddingInPixels, padAtMonitorEdges, *)
+{
+    ; get necessary details
+    if !GetTargetWindowToMoveAndResizeInfo(&mousePositionLeft, &mousePositionTop, &windowUnderMouseHandleID, &monitorDetails)
+    {
+        return
+    }
+
+    ; move the window
+    MoveAndResizeWindow(windowUnderMouseHandleID, topLeftRowNumber, topLeftColumnNumber, numberOfRows, numberOfColumns, windowPaddingInPixels, padAtMonitorEdges, monitorDetails.index)
+
+    return
+}
+
+; move the window
+MoveAndResizeWindow(windowHandleID, topLeftRowNumber, topLeftColumnNumber, numberOfRows, numberOfColumns, windowPaddingInPixels, padAtMonitorEdges, monitorIndex)
+{
+    ; we want modal msgbox (https://www.autohotkey.com/docs/v2/lib/Gui.htm#OwnDialogs)
+    layoutSelectorGUI.Opt("+OwnDialogs")
+
+    ; get details about the monitor we are moving to
+    monitorDetails := allMonitorDetails[monitorIndex]
+
+    ; now we need information about the client window to calculate some offset details
+    targetWindowToMoveAndResizeWindowInfo := Buffer(60, 0)
+    NumPut("uint", 60, targetWindowToMoveAndResizeWindowInfo, 0)
+    getWindowInfoResponse := DllCall("GetWindowInfo", "uptr", targetWindowToMoveAndResizeWindowHandleID, "ptr", targetWindowToMoveAndResizeWindowInfo)
+    if !getWindowInfoResponse
+    {
+        MsgBox("Cannot get position of window hwnd: " targetWindowToMoveAndResizeWindowHandleID ".", "ExquisiteW Error", "OK Iconx 0x1000 0x4000")
+    }
+    else
+    {
+        clientWindowLeftPadding := NumGet(targetWindowToMoveAndResizeWindowInfo, 20, "int") - NumGet(targetWindowToMoveAndResizeWindowInfo, 4, "int")
+        clientWindowRightPadding := NumGet(targetWindowToMoveAndResizeWindowInfo, 12, "int") - NumGet(targetWindowToMoveAndResizeWindowInfo, 28, "int")
+        clientWindowBottomPadding := NumGet(targetWindowToMoveAndResizeWindowInfo, 16, "int") - NumGet(targetWindowToMoveAndResizeWindowInfo, 32, "int")
+
+        ; calculate the window's new dimensions
+        newLeft := monitorDetails.workArea.left + (monitorDetails.workArea.width * topLeftColumnNumber / 12) - clientWindowLeftPadding ; + windowPaddingInPixels
+        newTop := monitorDetails.workArea.top + (monitorDetails.workArea.height * topLeftRowNumber / 12) ; + windowPaddingInPixels
+        newWidth := (monitorDetails.workArea.width * numberOfColumns / 12) + clientWindowLeftPadding + clientWindowRightPadding ; - windowPaddingInPixels - windowPaddingInPixels
+        newHeight := (monitorDetails.workArea.height * numberOfRows / 12) + clientWindowBottomPadding ; - windowPaddingInPixels - windowPaddingInPixels
+
+        if ((topLeftColumnNumber = 0) and padAtMonitorEdges) or topLeftColumnNumber != 0
+        {
+            newLeft += windowPaddingInPixels
+            newWidth -= windowPaddingInPixels
+        }
+        if ((topLeftRowNumber = 0) and padAtMonitorEdges) or topLeftRowNumber != 0
+        {
+            newTop += windowPaddingInPixels
+            newHeight -= windowPaddingInPixels
+        }
+        if (((topLeftColumnNumber + numberOfColumns) = 12) and padAtMonitorEdges) or ((topLeftColumnNumber + numberOfColumns) != 12)
+        {
+            newWidth -= windowPaddingInPixels
+        }
+        if (((topLeftRowNumber + numberOfRows) = 12) and padAtMonitorEdges) or ((topLeftRowNumber + numberOfRows) != 12)
+        {
+            newHeight -= windowPaddingInPixels
+        }
+
+        ; get the status of the current window
+        WinStatus := WinGetMinMax("ahk_id " targetWindowToMoveAndResizeWindowHandleID)
+        if (WinStatus = 0) or (WinStatus = 1)
+        {
+            if (WinStatus = 1)
+                WinRestore("ahk_id " targetWindowToMoveAndResizeWindowHandleID)
+            try
+            {
+                WinMove(newLeft, newTop, newWidth, newHeight, "ahk_id " targetWindowToMoveAndResizeWindowHandleID)
+            }
+            catch as err
+            {
+                MsgBox("Cannot move window hwnd: " targetWindowToMoveAndResizeWindowHandleID ". `n`n" type(err) ": " err.Message, "ExquisiteW Error", "OK Iconx 0x1000 0x4000")
+            }
+        }
+    }
+
+    if (setting_CloseAfterSelection = 1)
+    {
+        layoutSelectorGUI.hide()
+    }
     return
 }
 
@@ -369,7 +502,7 @@ GetTargetWindowToMoveAndResizeInfo(&mousePositionLeft, &mousePositionTop, &windo
         TrayTip "Cannot get the window under the mouse.", "ExquisiteW Error", "Mute Iconx"
         return false
     }
-    
+
     ; get the PID of the window and see if it is running elevated
     if isAdminCheckForMovingWindowsNeeded and (IsProcessElevated(WinGetPID("ahk_id " windowUnderMouseHandleID)) = 1)
     {
@@ -390,128 +523,6 @@ GetTargetWindowToMoveAndResizeInfo(&mousePositionLeft, &mousePositionTop, &windo
     monitorDetails := getDetailsOfMonitorMouseIsIn(&mousePositionLeft, &mousePositionTop)
 
     return true
-}
-
-; runs when a global zone shortcut is run
-ZoneShortcutResponse(topLeftRowNumber, topLeftColumnNumber, numberOfRows, numberOfColumns, paddingInPixels, *)
-{
-    ; get necessary details
-    if !GetTargetWindowToMoveAndResizeInfo(&mousePositionLeft, &mousePositionTop, &windowUnderMouseHandleID, &monitorDetails)
-    {
-        return
-    }
-
-    ; move the window
-    MoveAndResizeWindow(windowUnderMouseHandleID, topLeftRowNumber, topLeftColumnNumber, numberOfRows, numberOfColumns, paddingInPixels, monitorDetails.index)
-}
-
-; show the GUI
-ShowGUI(ThisHotKey)
-{
-    global layoutSelectorGUI
-
-    ; get necessary details
-    if !GetTargetWindowToMoveAndResizeInfo(&mousePositionLeft, &mousePositionTop, &windowUnderMouseHandleID, &monitorDetails)
-    {
-        return
-    }
-
-    ; set the active application text the window the mouse was over
-    layoutSelectorGUI["activeApplicationName"].Text := WinGetProcessName(windowUnderMouseHandleID) " > " WinGetTitle(windowUnderMouseHandleID)
-      
-    ; if there are multiple monitors
-    ; update the selected radio
-    if (allMonitorDetails.Length > 1)
-    {
-        ; select the current monitor radio button
-        firstMonitorRadioButtonNN     := ControlGetClassNN(layoutSelectorGUI["monitorSelection"])
-        firstMonitorRadioButtonNumber := SubStr(firstMonitorRadioButtonNN, 7)
-        layoutSelectorGUI['Button' . (firstMonitorRadioButtonNumber + monitorDetails.index - 1)].Value := 1
-    }
-
-    ; we want the GUI to be centered under the mouse
-    ; for that we need to know the top/left of the GUI based on the mouse
-    layoutSelectorGUILeft := mousePositionLeft - round(layoutSelectorGUIWidth / 2)
-    ; but we need to account for situations where the mouse is near the edge and the GUI will be offscreen
-    if(layoutSelectorGUILeft < monitorDetails.workArea.Left)
-    {
-        layoutSelectorGUILeft := monitorDetails.workArea.Left
-    }
-    else if ((layoutSelectorGUILeft + layoutSelectorGUIWidth) > monitorDetails.workArea.Right)
-    {
-        layoutSelectorGUILeft := layoutSelectorGUILeft - ((layoutSelectorGUILeft + layoutSelectorGUIWidth) - monitorDetails.workArea.Right)
-    }
-
-    layoutSelectorGUITop := mousePositionTop - round(layoutSelectorGUIHeight / 2)
-    if(layoutSelectorGUITop < monitorDetails.workArea.Top)
-    {
-        layoutSelectorGUITop := monitorDetails.workArea.Top
-    }
-    else if ((layoutSelectorGUITop + layoutSelectorGUIHeight) > monitorDetails.workArea.Bottom)
-    {
-        layoutSelectorGUITop := layoutSelectorGUITop - ((layoutSelectorGUITop + layoutSelectorGUIHeight) - monitorDetails.workArea.Bottom)
-    }
-
-    ; move the GUI to the right place so it is centered under the mouse
-    layoutSelectorGUI.Move(layoutSelectorGUILeft, layoutSelectorGUITop)
-
-    ; show the GUI
-    layoutSelectorGUI.show()
-
-    return
-}
-
-; move the window
-MoveAndResizeWindow(windowHandleID, topLeftRowNumber, topLeftColumnNumber, numberOfRows, numberOfColumns, paddingInPixels, monitorIndex)
-{
-    ; we want modal msgbox (https://www.autohotkey.com/docs/v2/lib/Gui.htm#OwnDialogs)
-    layoutSelectorGUI.Opt("+OwnDialogs")
-
-    ; get details about the monitor we are moving to
-    monitorDetails := allMonitorDetails[monitorIndex]
-
-    ; now we need information about the client window to calculate some offset details
-    targetWindowToMoveAndResizeWindowInfo := Buffer(60, 0)
-    NumPut("uint", 60, targetWindowToMoveAndResizeWindowInfo, 0)
-    getWindowInfoResponse := DllCall("GetWindowInfo", "uptr", targetWindowToMoveAndResizeWindowHandleID, "ptr", targetWindowToMoveAndResizeWindowInfo)
-    if !getWindowInfoResponse
-    {
-        MsgBox("Cannot get position of window hwnd: " targetWindowToMoveAndResizeWindowHandleID ".", "ExquisiteW Error", "OK Iconx 0x1000 0x4000")
-    }
-    else
-    {
-        clientWindowLeftPadding := NumGet(targetWindowToMoveAndResizeWindowInfo, 20, "int") - NumGet(targetWindowToMoveAndResizeWindowInfo, 4, "int")
-        clientWindowRightPadding := NumGet(targetWindowToMoveAndResizeWindowInfo, 12, "int") - NumGet(targetWindowToMoveAndResizeWindowInfo, 28, "int")
-        clientWindowBottomPadding := NumGet(targetWindowToMoveAndResizeWindowInfo, 16, "int") - NumGet(targetWindowToMoveAndResizeWindowInfo, 32, "int")
-
-        ; calculate the window's new dimensions
-        newLeft := monitorDetails.workArea.left + (monitorDetails.workArea.width * topLeftColumnNumber / 12) - clientWindowLeftPadding + paddingInPixels
-        newTop := monitorDetails.workArea.top + (monitorDetails.workArea.height * topLeftRowNumber / 12) + paddingInPixels
-        newWidth := (monitorDetails.workArea.width * numberOfColumns / 12) + clientWindowLeftPadding + clientWindowRightPadding - paddingInPixels - paddingInPixels
-        newHeight := (monitorDetails.workArea.height * numberOfRows / 12) + clientWindowBottomPadding - paddingInPixels - paddingInPixels
-
-        ; get the status of the current window
-        WinStatus := WinGetMinMax("ahk_id " targetWindowToMoveAndResizeWindowHandleID)
-        if (WinStatus = 0) or (WinStatus = 1)
-        {
-            if (WinStatus = 1)
-                WinRestore("ahk_id " targetWindowToMoveAndResizeWindowHandleID)
-            try
-            {
-                WinMove(newLeft, newTop, newWidth, newHeight, "ahk_id " targetWindowToMoveAndResizeWindowHandleID)
-            }
-            catch as err
-            {
-                MsgBox("Cannot move window hwnd: " targetWindowToMoveAndResizeWindowHandleID ". `n`n" type(err) ": " err.Message, "ExquisiteW Error", "OK Iconx 0x1000 0x4000")
-            }
-        }
-    }
-
-    if (setting_CloseAfterSelection = 1)
-    {
-        layoutSelectorGUI.hide()
-    }
-    return
 }
 
 ; get details about all the connected monitors
@@ -613,4 +624,19 @@ CheckFoUpdates_Ready(req)
 
         MsgBox("Latest AutoHotkey version: " req.responseText, "ExquisiteW Update Error", "Iconx 0x1000")
     }
+}
+
+; removes blue border from button remaining after clicking
+WM_REMOVESTATE(wParam, lParam, msg, hwnd)
+{
+    ControlSetStyle(-0x1, lParam, "ahk_id " hwnd)
+    return
+}
+
+ProcessUserInput(*)
+{
+    global layoutSelectorGUI
+
+    layoutSelectorGUI.hide()
+    return
 }

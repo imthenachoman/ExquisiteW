@@ -1,9 +1,11 @@
 {
-    "windowPaddingInPixels": 2,
+    "windowPaddingInPixels": 5,
+    "padAtMonitorEdges" : true,
     "layouts": [
         {
             "name": "Two Vertical Split",
-            "windowPaddingInPixels": 5,
+            "windowPaddingInPixels": 10,
+            "padAtMonitorEdges" : false,
             "zones": [
                 {
                     "topLeftRowNumber": 0,
@@ -12,18 +14,20 @@
                     "numberOfColumns": 6,
                     "activator": "a",
                     "hotkey": "^!+s",
-                    "windowPaddingInPixels": 10
+                    "windowPaddingInPixels": 15
                 },
                 {
                     "topLeftRowNumber": 0,
                     "topLeftColumnNumber": 6,
                     "numberOfRows": 12,
-                    "numberOfColumns": 6
+                    "numberOfColumns": 6,
+                    "padAtMonitorEdges": true
                 }
             ]
         },
         {
             "name": "Two Horizontal Split",
+            "padAtMonitorEdges": false,
             "zones": [
                 {
                     "topLeftRowNumber": 0,
@@ -41,6 +45,7 @@
         },
         {
             "name": "4 Splits",
+            "padAtMonitorEdges": false,
             "zones": [
                 {
                     "topLeftRowNumber": 0,

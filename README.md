@@ -27,6 +27,7 @@ After layouts have been configured, and ExquisiteW is running, you can use Exqui
       - [Section `Layout Selector`](#section-layout-selector)
     - [`layouts.json`](#layoutsjson)
       - [`windowPaddingInPixels`](#windowpaddinginpixels)
+      - [`padAtMonitorEdges`](#padatmonitoredges)
       - [`layouts[].zones[].hotkey`](#layoutszoneshotkey)
   - [AutoHotKey Hotkeys](#autohotkey-hotkeys)
 - [Limitations And Known Bugs](#limitations-and-known-bugs)
@@ -121,10 +122,12 @@ This is a standard [INI file](https://en.wikipedia.org/wiki/INI_file) with some 
 ``` json
 {
     "windowPaddingInPixels" : number,    //optional
+    "padAtMonitorEdges"     : bool,      //optional
     "layouts"               : [
         {
             "name"                  : string,
             "windowPaddingInPixels" : number,    //optional
+            "padAtMonitorEdges"     : bool,      //optional
             "zones" : [
                 {
                     "topLeftRowNumber"      : 0-12,
@@ -133,7 +136,8 @@ This is a standard [INI file](https://en.wikipedia.org/wiki/INI_file) with some 
                     "numberOfColumns"       : 1-12,
                     "activator"             : single letter,                 //optional
                     "hotkey"                : AutoHotKey HotKey,             //optional
-                    "windowPaddingInPixels" : whole number greater than 1    //optional
+                    "windowPaddingInPixels" : whole number greater than 1,   //optional
+                    "padAtMonitorEdges"     : bool                           //optional
                 },
                 {...}
             ]
@@ -143,20 +147,23 @@ This is a standard [INI file](https://en.wikipedia.org/wiki/INI_file) with some 
 }
 ```
 
-| Property                                  | Valid Options                     | Description                                                                                                |
-| ----------------------------------------- | --------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `windowPaddingInPixels`                   | number                            | Global window padding for all zones in all layouts (see [`windowPaddingInPixels`](#windowpaddinginpixels)) |
-| `layouts` *                               | array of layouts                  | All of the layouts                                                                                         |
-| `layouts[].name` *                        | string                            | Name of the layout to show in the GUI                                                                      |
-| `layouts[].windowPaddingInPixels`         | number                            | Window padding for all of zones in this layout (see [`windowPaddingInPixels`](#windowpaddinginpixels))     |
-| `layouts[].zones` *                       | array of zones                    | All of the zones for this layout                                                                           |
-| `layouts[].zones[].topLeftRowNumber` *    | `0` - `11`                        | Row number of the top left corner of the window (see [How It Works](#how-it-works))                        |
-| `layouts[].zones[].topLeftColumnNumber` * | `0` - `11`                        | Column number of the top left corner of the window (see [How It Works](#how-it-works))                     |
-| `layouts[].zones[].numberOfRows` *        | `1` - `12`                        | Height of the window, in number of rows (see [How It Works](#how-it-works))                                |
-| `layouts[].zones[].numberOfColumns` *     | `1` - `12`                        | Width of the window, in number of columns (see [How It Works](#how-it-works))                              |
-| `layouts[].zones[].activator`             | letter                            | Single letter to activate a zone/button in the GUI                                                         |
-| `layouts[].zones[].hotkey`                | [AHK HotKey](#autohotkey-hotkeys) | Global shortcut to activate a zone without the GUI (see [`layouts[].zones[].hotkey`](#layoutszoneshotkey)) |
-| `layouts[].zones[].windowPaddingInPixels` | number                            | Window padding for this zone in this layout (see [`windowPaddingInPixels`](#windowpaddinginpixels))        |
+| Property                                  | Valid Options                     | Description                                                                                                                                                     |
+| ----------------------------------------- | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `windowPaddingInPixels`                   | number                            | Global window padding for all zones in all layouts (see [`windowPaddingInPixels`](#windowpaddinginpixels))                                                      |
+| `padAtMonitorEdges`                       | `true` or `false`                 | Global setting for if padding should be added when a window is at the edge of the monitor (see [`padAtMonitorEdges`](#padAtMonitorEdges))                       |
+| `layouts` *                               | array of layouts                  | All of the layouts                                                                                                                                              |
+| `layouts[].name` *                        | string                            | Name of the layout to show in the GUI                                                                                                                           |
+| `layouts[].windowPaddingInPixels`         | number                            | Window padding for all of zones in this layout (see [`windowPaddingInPixels`](#windowpaddinginpixels))                                                          |
+| `layouts[].padAtMonitorEdges`             | number                            | Setting for this layout for if padding should be added when a window is at the edge of the monitor (see [`padAtMonitorEdges`](#padAtMonitorEdges))              |
+| `layouts[].zones` *                       | array of zones                    | All of the zones for this layout                                                                                                                                |
+| `layouts[].zones[].topLeftRowNumber` *    | `0` - `11`                        | Row number of the top left corner of the window (see [How It Works](#how-it-works))                                                                             |
+| `layouts[].zones[].topLeftColumnNumber` * | `0` - `11`                        | Column number of the top left corner of the window (see [How It Works](#how-it-works))                                                                          |
+| `layouts[].zones[].numberOfRows` *        | `1` - `12`                        | Height of the window, in number of rows (see [How It Works](#how-it-works))                                                                                     |
+| `layouts[].zones[].numberOfColumns` *     | `1` - `12`                        | Width of the window, in number of columns (see [How It Works](#how-it-works))                                                                                   |
+| `layouts[].zones[].activator`             | letter                            | Single letter to activate a zone/button in the GUI                                                                                                              |
+| `layouts[].zones[].hotkey`                | [AHK HotKey](#autohotkey-hotkeys) | Global shortcut to activate a zone without the GUI (see [`layouts[].zones[].hotkey`](#layoutszoneshotkey))                                                      |
+| `layouts[].zones[].windowPaddingInPixels` | number                            | Window padding for this zone in this layout (see [`windowPaddingInPixels`](#windowpaddinginpixels))                                                             |
+| `layouts[].zones[].padAtMonitorEdges`     | number                            | Setting for this zone in this layout for if padding should be added when a window is at the edge of the monitor (see [`padAtMonitorEdges`](#padAtMonitorEdges)) |
 
 **\* required properties**
 
@@ -169,6 +176,18 @@ This is a standard [INI file](https://en.wikipedia.org/wiki/INI_file) with some 
   - for a specific zone by setting the `windowPaddingInPixels` property of a specific zone
 - If `windowPaddingInPixels` is not set for a zone, it will use the value of `windowPaddingInPixels` for the layout
 - If `windowPaddingInPixels` is not set for a layout, it will use the global value of `windowPaddingInPixels`
+
+#### `padAtMonitorEdges`
+
+- If you have set `windowPaddingInPixels` then padding will be added to all four sides of the window
+- If the window is at the edge of the monitor, you may not want padding added to that edge
+- This lets you disable padding at the edge
+- This setting can be set in 3 places:
+  - globally, for all layouts, by setting the `padAtMonitorEdges` property at the root of `layouts.json`
+  - for all zones of a specific layout by setting the `padAtMonitorEdges` property for a layout
+  - for a specific zone by setting the `padAtMonitorEdges` property of a specific zone
+- If `padAtMonitorEdges` is not set for a zone, it will use the value of `padAtMonitorEdges` for the layout
+- If `padAtMonitorEdges` is not set for a layout, it will use the global value of `padAtMonitorEdges`
 
 #### `layouts[].zones[].hotkey`
 
